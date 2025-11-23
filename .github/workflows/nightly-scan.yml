@@ -64,7 +64,7 @@ jobs:
       - name: Run Scanner
         run: |
           chmod +x scripts/scan_repo.sh
-          ./scripts/scan_repo.sh repo "${{ matrix.repo }}" results/
+          scripts/scan_repo.sh repo "${{ matrix.repo }}" results/
 
       - name: Upload Results
         if: always()
