@@ -43,8 +43,13 @@ jobs:
           sudo apt-get install -y pipx jq
           pipx install semgrep
           pipx install checkov
-          pipx install trivy
           pipx install gitleaks
+
+      - name: Manual Trivy Install
+        uses: aquasecurity/setup-trivy@v0.2.0
+        with:
+          cache: true
+          version: v0.67.2
 
       - name: Clone target repo
         run: |
