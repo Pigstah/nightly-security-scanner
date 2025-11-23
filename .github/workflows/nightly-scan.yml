@@ -1,0 +1,98 @@
+name: Nightly Security Scan
+
+on:
+  schedule:
+    - cron: "0 2 * * *"   # 02:00 UTC nightly
+  workflow_dispatch:      # Manual run
+
+jobs:
+  select-repos:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.select.outputs.matrix }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Repos
+        id: select
+        run: |
+          python3 scripts/select_repos.py > selected.json
+          echo "matrix=$(cat selected.json)" >> $GITHUB_OUTPUT
+
+      - name: Upload Selected List
+        uses: actions/upload-artifact@v4
+        with:
+          name: selected-list
+          path: selected.json
+
+  scan:
+    needs: select-repos
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.select-repos.outputs.matrix) }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pipx jq
+          pipx install semgrep
+          pipx install checkov
+          pipx install trivy
+          pipx install gitleaks
+
+      - name: Clone target repo
+        run: |
+          git clone --depth 1 https://github.com/${{ matrix.repo }} repo
+
+      - name: Run Scanner
+        run: |
+          chmod +x scripts/scan_repo.sh
+          ./scripts/scan_repo.sh repo "${{ matrix.repo }}" results/
+
+      - name: Upload Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scan-${{ matrix.repo }}
+          path: results/
+
+  generate-dashboard:
+    needs: scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download all results
+        uses: actions/download-artifact@v4
+        with:
+          path: all-results
+
+      - name: Generate Dashboard
+        run: |
+          python3 scripts/generate_dashboard.py all-results > index.html
+
+      - name: Publish Dashboard
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+        
+  deploy-pages:
+    needs: generate-dashboard
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
