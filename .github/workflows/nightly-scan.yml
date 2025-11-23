@@ -43,7 +43,13 @@ jobs:
           sudo apt-get install -y pipx jq
           pipx install semgrep
           pipx install checkov
-          pipx install gitleaks
+
+      - name: Install Gitleaks
+        run: |
+          curl -sSL https://github.com/gitleaks/gitleaks/releases/latest/download/gitleaks-linux-amd64.tar.gz -o gitleaks.tar.gz
+          tar -xzf gitleaks.tar.gz
+          sudo mv gitleaks /usr/local/bin/gitleaks
+          sudo chmod +x /usr/local/bin/gitleaks
 
       - name: Manual Trivy Install
         uses: aquasecurity/setup-trivy@v0.2.0
