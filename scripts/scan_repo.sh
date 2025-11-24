@@ -30,11 +30,13 @@ if ! find "$REPO_DIR" -type f \( \
 fi
 
 ##############################################
-# 2. RUN SEMGREP
+# 2. RUN SEMGREP (Static Code Analysis)
 ##############################################
 echo "Running Semgrep..."
-semgrep --config=auto "$REPO_DIR" --json > "$OUT_DIR/semgrep.json" \
-    || echo "Semgrep crashed" > "$OUT_DIR/semgrep_error.txt"
+semgrep --config=auto "$REPO_DIR" --json --disable-version-check 2>&1 \
+  | awk 'BEGIN {found=0} /^\{/ {found=1} found {print}' \
+  | jq '.' > "$OUT_DIR/semgrep.json" \
+  || echo "Semgrep crashed" > "$OUT_DIR/semgrep_error.txt"
 
 
 ##############################################
