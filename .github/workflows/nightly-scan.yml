@@ -51,7 +51,7 @@ jobs:
           sudo mv gitleaks /usr/local/bin/gitleaks
           sudo chmod +x /usr/local/bin/gitleaks
 
-      - name: Manual Trivy Install
+      - name: Install Trivy
         uses: aquasecurity/setup-trivy@v0.2.0
         with:
           cache: true
@@ -70,7 +70,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: scan-${{ matrix.repo }}
+          name: scan-${{ matrix.safe_repo }}
           path: results/
 
   generate-dashboard:

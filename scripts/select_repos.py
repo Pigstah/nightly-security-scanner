@@ -2,9 +2,19 @@
 import requests
 import random
 import json
+import re
 
 # Number of repos per run
 COUNT = 10
+
+
+def sanitize_repo_name(name: str) -> str:
+    """
+    Replace slashes with dots so repo names are safe for
+    GitHub Actions artifact paths.
+    Example: 'owner/repo' -> 'owner.repo'
+    """
+    return name.replace("/", ".")
 
 
 def get_random_repos(count=COUNT):
@@ -32,6 +42,15 @@ def get_random_repos(count=COUNT):
 if __name__ == "__main__":
     repos = get_random_repos()
 
-    # Format GitHub Actions matrix output
-    matrix = {"include": [{"repo": r} for r in repos]}
+    # Add sanitized names to the GitHub Actions matrix
+    matrix = {
+        "include": [
+            {
+                "repo": r,
+                "safe_repo": sanitize_repo_name(r)
+            }
+            for r in repos
+        ]
+    }
+
     print(json.dumps(matrix))
